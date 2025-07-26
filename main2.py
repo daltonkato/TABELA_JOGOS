@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-#from io import BytesIO
+from io import BytesIO
 
 st.set_page_config(page_title="Tabela de Jogos 2025", layout="wide")
 
@@ -12,8 +12,9 @@ a_uploaded_file = st.file_uploader("Envie a planilha Excel (.xlsx)", type=["xlsx
 if a_uploaded_file:
     df = pd.read_excel(a_uploaded_file, sheet_name="Sheet1")
 
-    st.subheader("🖊️ Editar Jogos")
-    edited_df = st.data_editor(df, num_rows="dynamic")
+    st.subheader("🖊️ Editar Resultados dos Jogos")
+    edit_columns = ["Resultado_Time1", "Resultado_Time2"]
+    edited_df = st.data_editor(df, num_rows="dynamic", disabled=[col for col in df.columns if col not in edit_columns])
 
     # Botão para gerar classificação
     if st.button("Atualizar Classificação e Ranking"):
@@ -40,6 +41,7 @@ if a_uploaded_file:
         )
         tabela["Saldo"] = tabela["Gols_Pro"] - tabela["Gols_Contra"]
         tabela = tabela.sort_values(by=["Pontos", "Saldo", "Gols_Pro"], ascending=False).reset_index()
+        tabela.index += 1  # Começar índice com 1
 
         st.subheader("📈 Classificação Geral")
         st.dataframe(tabela, use_container_width=True)
@@ -62,16 +64,16 @@ if a_uploaded_file:
         st.dataframe(ranking, use_container_width=True)
 
         # Download do DataFrame atualizado
- #      towrite = BytesIO()
- #      with pd.ExcelWriter(towrite, engine="openpyxl") as writer:
- #          edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
- #          tabela.to_excel(writer, index=False, sheet_name="Classificacao")
- #          ranking.to_excel(writer, index=False, sheet_name="RankingGoleiros")
- #      towrite.seek(0)
+        towrite = BytesIO()
+        with pd.ExcelWriter(towrite, engine="openpyxl") as writer:
+            edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
+            tabela.to_excel(writer, sheet_name="Classificacao")
+            ranking.to_excel(writer, index=False, sheet_name="RankingGoleiros")
+        towrite.seek(0)
 
- #      st.download_button(
- #          label="📥 Baixar planilha atualizada",
- #          data=towrite,
- #          file_name="tabela_festival_atualizada.xlsx",
- #          mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
- #      )
+        st.download_button(
+            label="📥 Baixar planilha atualizada",
+            data=towrite,
+            file_name="tabela_festival_atualizada.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
