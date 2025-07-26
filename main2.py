@@ -14,20 +14,19 @@ df = pd.read_excel(a_uploaded_file, sheet_name="Sheet1")
 st.subheader("🖊️ Editar Resultados dos Jogos")
 edit_columns = ["Resultado_Time1", "Resultado_Time2"]
 
-# Form para garantir atualização controlada
-with st.form("form_edicao"):
-    edited_df = st.data_editor(
-        df,
-        num_rows="fixed",
-        disabled=[col for col in df.columns if col not in edit_columns],
-        key="editor"
-    )
-    submitted = st.form_submit_button("Salvar Alterações")
+# Editor com salvamento automático ao detectar mudanças
+edited_df = st.data_editor(
+    df,
+    num_rows="fixed",
+    disabled=[col for col in df.columns if col not in edit_columns],
+    key="editor"
+)
 
-if submitted:
+# Detectar se houve mudança nos campos editáveis
+if edited_df[edit_columns].astype(str).ne(df[edit_columns].astype(str)).any(axis=None):
     with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
-    st.success("✅ Alterações salvas com sucesso.")
+    st.success("✅ Alterações salvas automaticamente.")
 
 # Botão para gerar classificação
 if st.button("Atualizar Classificação e Ranking"):
