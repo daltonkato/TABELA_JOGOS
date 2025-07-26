@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import time
 from io import BytesIO
 import os
 
@@ -24,6 +25,7 @@ edited_df = st.data_editor(
 
 # Detectar se houve mudança nos campos editáveis
 if edited_df[edit_columns].astype(str).ne(df[edit_columns].astype(str)).any(axis=None):
+    time.sleep(1)  # Esperar 1 segundo antes de salvar
     with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
     st.success("✅ Alterações salvas automaticamente.")
