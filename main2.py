@@ -6,7 +6,7 @@ import os
 
 st.set_page_config(page_title="Tabela de Jogos 2025", layout="wide")
 
-st.title("🏀 Editor de Tabela de Jogos - Festival 2025")
+st.title("⚽ Editor de Tabela de Jogos - Festival 2025")
 
 # Leitura direta da planilha local
 a_uploaded_file = "tabela_festival_2025.xlsx"
