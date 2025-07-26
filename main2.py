@@ -30,10 +30,16 @@ if st.button("Atualizar Classificação e Ranking"):
         st.warning(f"⚠️ Existem {jogos_pendentes} jogos ainda sem resultado preenchido.")
 
     # Cálculo de classificação
-    times = pd.concat([jogos_validos[["Time1", "Resultado_Time1", "Resultado_Time2"]].rename(
-        columns={"Time1": "Time", "Resultado_Time1": "Gols_Pro", "Resultado_Time2": "Gols_Contra"}),
+    todos_times = pd.concat([
+        edited_df[["Time1"]].rename(columns={"Time1": "Time"}),
+        edited_df[["Time2"]].rename(columns={"Time2": "Time"})
+    ]).drop_duplicates().reset_index(drop=True)
+
+    times = pd.concat([
+        jogos_validos[["Time1", "Resultado_Time1", "Resultado_Time2"]].rename(
+            columns={"Time1": "Time", "Resultado_Time1": "Gols_Pro", "Resultado_Time2": "Gols_Contra"}),
         jogos_validos[["Time2", "Resultado_Time2", "Resultado_Time1"]].rename(
-        columns={"Time2": "Time", "Resultado_Time2": "Gols_Pro", "Resultado_Time1": "Gols_Contra"})
+            columns={"Time2": "Time", "Resultado_Time2": "Gols_Pro", "Resultado_Time1": "Gols_Contra"})
     ])
 
     times["Pontos"] = times.apply(lambda row: 3 if row.Gols_Pro > row.Gols_Contra else 1 if row.Gols_Pro == row.Gols_Contra else 0, axis=1)
@@ -49,9 +55,10 @@ if st.button("Atualizar Classificação e Ranking"):
         Derrotas=("Derrota", "sum"),
         Gols_Pro=("Gols_Pro", "sum"),
         Gols_Contra=("Gols_Contra", "sum")
-    )
+    ).reindex(todos_times["Time"]).fillna(0).reset_index()
+
     tabela["Saldo"] = tabela["Gols_Pro"] - tabela["Gols_Contra"]
-    tabela = tabela.sort_values(by=["Pontos", "Saldo", "Gols_Pro"], ascending=False).reset_index()
+    tabela = tabela.sort_values(by=["Pontos", "Saldo", "Gols_Pro"], ascending=False).reset_index(drop=True)
     tabela.index += 1  # Começar índice com 1
 
     st.subheader("📈 Classificação Geral")
@@ -77,7 +84,7 @@ if st.button("Atualizar Classificação e Ranking"):
     # Salvar classificação e ranking também na planilha
     with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
-        tabela.to_excel(writer, sheet_name="Classificacao")
-        ranking.to_excel(writer, index=False, sheet_name="RankingGoleiros")
+        tabela.to_excel(writer, sheet_name="Classificacao", index=False)
+        ranking.to_excel(writer, sheet_name="RankingGoleiros", index=False)
 
     st.success("✅ Planilha atualizada com sucesso!")
