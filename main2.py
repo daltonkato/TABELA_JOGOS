@@ -21,10 +21,18 @@ with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exist
 
 # Botão para gerar classificação
 if st.button("Atualizar Classificação e Ranking"):
+    # Filtrar apenas jogos com resultados preenchidos
+    jogos_validos = edited_df.dropna(subset=["Resultado_Time1", "Resultado_Time2"])
+
+    # Exibir alerta se houver jogos incompletos
+    jogos_pendentes = len(edited_df) - len(jogos_validos)
+    if jogos_pendentes > 0:
+        st.warning(f"⚠️ Existem {jogos_pendentes} jogos ainda sem resultado preenchido.")
+
     # Cálculo de classificação
-    times = pd.concat([edited_df[["Time1", "Resultado_Time1", "Resultado_Time2"]].rename(
+    times = pd.concat([jogos_validos[["Time1", "Resultado_Time1", "Resultado_Time2"]].rename(
         columns={"Time1": "Time", "Resultado_Time1": "Gols_Pro", "Resultado_Time2": "Gols_Contra"}),
-        edited_df[["Time2", "Resultado_Time2", "Resultado_Time1"]].rename(
+        jogos_validos[["Time2", "Resultado_Time2", "Resultado_Time1"]].rename(
         columns={"Time2": "Time", "Resultado_Time2": "Gols_Pro", "Resultado_Time1": "Gols_Contra"})
     ])
 
@@ -50,9 +58,9 @@ if st.button("Atualizar Classificação e Ranking"):
     st.dataframe(tabela, use_container_width=True)
 
     # Ranking dos goleiros menos vazados
-    goleiros_t1 = edited_df[["Goleiro_Time1", "Resultado_Time2"]].rename(
+    goleiros_t1 = jogos_validos[["Goleiro_Time1", "Resultado_Time2"]].rename(
         columns={"Goleiro_Time1": "Goleiro", "Resultado_Time2": "Gols_Sofridos"})
-    goleiros_t2 = edited_df[["Goleiro_Time2", "Resultado_Time1"]].rename(
+    goleiros_t2 = jogos_validos[["Goleiro_Time2", "Resultado_Time1"]].rename(
         columns={"Goleiro_Time2": "Goleiro", "Resultado_Time1": "Gols_Sofridos"})
     goleiros = pd.concat([goleiros_t1, goleiros_t2])
 
