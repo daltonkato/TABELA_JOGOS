@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import os
 
 st.set_page_config(page_title="Tabela de Jogos 2025", layout="wide")
 
@@ -13,6 +14,10 @@ df = pd.read_excel(a_uploaded_file, sheet_name="Sheet1")
 st.subheader("🖊️ Editar Resultados dos Jogos")
 edit_columns = ["Resultado_Time1", "Resultado_Time2"]
 edited_df = st.data_editor(df, num_rows="dynamic", disabled=[col for col in df.columns if col not in edit_columns])
+
+# Salva automaticamente após edição
+with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+    edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
 
 # Botão para gerar classificação
 if st.button("Atualizar Classificação e Ranking"):
@@ -61,17 +66,10 @@ if st.button("Atualizar Classificação e Ranking"):
     st.subheader("🏆 Ranking dos Goleiros - Menos Vazados")
     st.dataframe(ranking, use_container_width=True)
 
-    # Download do DataFrame atualizado
-    towrite = BytesIO()
-    with pd.ExcelWriter(towrite, engine="openpyxl") as writer:
+    # Salvar classificação e ranking também na planilha
+    with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
         tabela.to_excel(writer, sheet_name="Classificacao")
         ranking.to_excel(writer, index=False, sheet_name="RankingGoleiros")
-    towrite.seek(0)
 
-    st.download_button(
-        label="📥 Baixar planilha atualizada",
-        data=towrite,
-        file_name="tabela_festival_atualizada.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    st.success("✅ Planilha atualizada com sucesso!")
