@@ -20,11 +20,11 @@ edited_df = st.data_editor(
     key="editor"
 )
 
-# Detecção de mudanças e salvamento automático
+# Detecção de mudanças e salvamento automático (sem rerun)
 if edited_df[edit_columns].astype(str).ne(df[edit_columns].astype(str)).any(axis=None):
     with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
-    st.experimental_rerun()
+    st.info("✅ Alterações salvas automaticamente.")
 
 # Botão para gerar classificação
 if st.button("Atualizar Classificação e Ranking"):
