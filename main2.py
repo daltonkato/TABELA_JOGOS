@@ -15,7 +15,11 @@ df = pd.read_excel(a_uploaded_file, sheet_name="Sheet1")
 st.subheader("🖊️ Editar Resultados dos Jogos")
 edit_columns = ["Resultado_Time1", "Resultado_Time2"]
 
-# Editor com salvamento automático ao detectar mudanças
+# Sessão para armazenar estado anterior
+if "previous_values" not in st.session_state:
+    st.session_state.previous_values = df[edit_columns].copy()
+
+# Editor de dados
 edited_df = st.data_editor(
     df,
     num_rows="fixed",
@@ -24,10 +28,11 @@ edited_df = st.data_editor(
 )
 
 # Detectar se houve mudança nos campos editáveis
-if edited_df[edit_columns].astype(str).ne(df[edit_columns].astype(str)).any(axis=None):
+if not edited_df[edit_columns].equals(st.session_state.previous_values):
     time.sleep(1)  # Esperar 1 segundo antes de salvar
     with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
         edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
+    st.session_state.previous_values = edited_df[edit_columns].copy()
     st.success("✅ Alterações salvas automaticamente.")
 
 # Botão para gerar classificação
