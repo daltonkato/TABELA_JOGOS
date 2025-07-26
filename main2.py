@@ -13,11 +13,18 @@ df = pd.read_excel(a_uploaded_file, sheet_name="Sheet1")
 
 st.subheader("🖊️ Editar Resultados dos Jogos")
 edit_columns = ["Resultado_Time1", "Resultado_Time2"]
-edited_df = st.data_editor(df, num_rows="fixed", disabled=[col for col in df.columns if col not in edit_columns])
+edited_df = st.data_editor(
+    df,
+    num_rows="fixed",
+    disabled=[col for col in df.columns if col not in edit_columns],
+    key="editor"
+)
 
-# Salva automaticamente após edição
-with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
-    edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
+# Detecção de mudanças e salvamento automático
+if edited_df[edit_columns].astype(str).ne(df[edit_columns].astype(str)).any(axis=None):
+    with pd.ExcelWriter(a_uploaded_file, engine="openpyxl", mode="a", if_sheet_exists="replace") as writer:
+        edited_df.to_excel(writer, index=False, sheet_name="Sheet1")
+    st.experimental_rerun()
 
 # Botão para gerar classificação
 if st.button("Atualizar Classificação e Ranking"):
@@ -64,7 +71,12 @@ if st.button("Atualizar Classificação e Ranking"):
     st.subheader("📈 Classificação Geral")
     st.dataframe(tabela, use_container_width=True)
 
-    # Ranking dos goleiros menos vazados
+    # Ranking dos goleiros menos vazados, considerando todos os goleiros mesmo sem jogos
+    todos_goleiros = pd.concat([
+        edited_df[["Goleiro_Time1"]].rename(columns={"Goleiro_Time1": "Goleiro"}),
+        edited_df[["Goleiro_Time2"]].rename(columns={"Goleiro_Time2": "Goleiro"})
+    ]).drop_duplicates().reset_index(drop=True)
+
     goleiros_t1 = jogos_validos[["Goleiro_Time1", "Resultado_Time2"]].rename(
         columns={"Goleiro_Time1": "Goleiro", "Resultado_Time2": "Gols_Sofridos"})
     goleiros_t2 = jogos_validos[["Goleiro_Time2", "Resultado_Time1"]].rename(
@@ -74,8 +86,8 @@ if st.button("Atualizar Classificação e Ranking"):
     ranking = goleiros.groupby("Goleiro").agg(
         Jogos=("Goleiro", "count"),
         Gols_Sofridos=("Gols_Sofridos", "sum")
-    )
-    ranking["Media"] = (ranking["Gols_Sofridos"] / ranking["Jogos"]).round(2)
+    ).reindex(todos_goleiros["Goleiro"]).fillna(0)
+    ranking["Media"] = ranking.apply(lambda x: round(x.Gols_Sofridos / x.Jogos, 2) if x.Jogos > 0 else 0, axis=1)
     ranking = ranking.sort_values(by="Media").reset_index()
 
     st.subheader("🏆 Ranking dos Goleiros - Menos Vazados")
